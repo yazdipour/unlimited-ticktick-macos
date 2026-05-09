@@ -128,7 +128,7 @@ find "$APP" -name '*:com.apple.provenance' -type f -delete
 
 echo "[3/4] Re-signing nested code for local debugging"
 while IFS= read -r item; do
-  codesign --force --sign - --timestamp=none --entitlements "$ENTITLEMENTS" "$item" >/dev/null
+  codesign --force --sign - --timestamp=none "$item" >/dev/null
 done < <(
   find "$APP/Contents" \
     \( -name '*.framework' -o -name '*.dylib' -o -name '*.appex' -o -name '*.xpc' -o -name '*.app' -o -name '*.docktileplugin' \) \
@@ -136,7 +136,7 @@ done < <(
 )
 
 echo "[4/4] Re-signing app bundle"
-codesign --force --deep --sign - --timestamp=none --entitlements "$ENTITLEMENTS" "$APP" >/dev/null
+codesign --force --deep --sign - --timestamp=none "$APP" >/dev/null
 
 echo "[done] Verifying signature"
 codesign --verify --deep --strict --verbose=2 "$APP"
