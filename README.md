@@ -17,33 +17,39 @@ This creates a fully re-signed `.app` bundle that you can launch natively on mac
 
 You only need standard macOS developer tools:
 - Xcode Command Line Tools (`xcode-select --install`)
-- Common Unix tools already included with macOS: `bash`, `codesign`, `ditto`, `hdiutil`, `lipo`, `otool`, `plutil`, `xattr`
+- Common Unix tools already included with macOS: `bash`, `codesign`, `curl`, `ditto`, `hdiutil`, `lipo`, `otool`, `plutil`, `xattr`
 - `git`, used only if `insert_dylib` needs to be cloned automatically
 
 ## Usage
 
-Run `patch.sh`. It accepts a `.dmg` file, an `.app` folder, or a directory containing `TickTick.app`.
-
-If no source is provided, it uses `/Applications/TickTick.app`.
+Run `patch.sh` with an optional source argument:
 
 ```bash
-# Patch /Applications/TickTick.app
+# By default, it patches ~/Applications/TickTick.app
 ./patch.sh
 
-# Or target a specific DMG file
+# Or you can target a specific local disk image
 ./patch.sh ~/Downloads/TickTick_8.0.60_468.dmg
 
 # Or target a specific App bundle
 ./patch.sh /Applications/TickTick.app
-# Once the script completes successfully, It produces `build/TickTick.patched.app`.
+
+# Or download and patch a disk image directly
+./patch.sh "https://example.com/TickTick.dmg"
 ```
 
-You can also double-click it in Finder.
+Once the script completes successfully, it produces `build/TickTick.patched.app`.
 
-> [!NOTE]
-> `prepare.sh` currently documents an `[OUTPUT_APP]` argument, but the scripts always write to `build/TickTick.patched.app`.
 
 ## Troubleshooting
+
+### Quarantine or damaged-app warnings
+
+The scripts clear quarantine automatically, but you can repeat it manually:
+
+```bash
+xattr -cr "build/TickTick.patched.app"
+```
 
 ### `The application "TickTick.patched.app" can't be opened`
 
@@ -87,27 +93,6 @@ The macOS deployment target 'MACOSX_DEPLOYMENT_TARGET' is set to 10.9...
 ```
 
 It is not the cause of TickTick launch failures. The helper still builds and is only used to modify the Mach-O load commands.
-
-### Quarantine or damaged-app warnings
-
-The scripts clear quarantine automatically, but you can repeat it manually:
-
-```bash
-xattr -cr "build/TickTick.patched.app"
-```
-
-## Under the Hood
-
-When you execute `patch.sh`, it performs the following steps:
-1. Copies the target `.app` to `build/TickTick.patched.app` (extracting from a DMG if necessary).
-2. Clears macOS Gatekeeper and provenance attributes (`xattr -cr`).
-3. Re-signs nested frameworks, extensions, XPC services, helper apps, and dylibs ad-hoc.
-4. Compiles `hook.m` into `libPatchZero.dylib` using the same architectures as the TickTick executable.
-5. Uses `insert_dylib --inplace --all-yes` to inject a load command into the main executable so it loads the custom dylib on startup.
-6. Sets the dylib install name to `@executable_path/libPatchZero.dylib`.
-7. Re-signs the injected dylib.
-8. Re-signs the final app ad-hoc with minimal local debug entitlements.
-9. Clears quarantine attributes again.
 
 ## Development
 

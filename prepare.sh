@@ -1,27 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Path to the .app, .dmg, or directory containing TickTick.app to patch.
+# Path or URL to the .app, .dmg, or directory containing TickTick.app to patch.
 # Defaults to /Applications/TickTick.app if not provided.
 DEFAULT_SOURCE="/Applications/TickTick.app"
 SOURCE_INPUT="${1:-$DEFAULT_SOURCE}"
 
-# Output path for the prepared app bundle. This will be overwritten if it already exists.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP="$SCRIPT_DIR/build/TickTick.patched.app"
-ENTITLEMENTS="$SCRIPT_DIR/debug-entitlements.plist"
 MOUNT_POINT=""
 SOURCE_APP=""
 
 usage() {
   cat <<USAGE
 Usage:
-  $0 [SOURCE] [OUTPUT_APP]
+  $0 [SOURCE]
 
 SOURCE can be:
   - TickTick.app
   - a directory containing TickTick.app
-  - a TickTick .dmg
+  - a TickTick disk image, such as a .dmg
+  - an http(s) URL to a TickTick disk image
 
 Defaults:
   SOURCE     $DEFAULT_SOURCE
@@ -30,7 +29,8 @@ Defaults:
 Examples:
   $0
   $0 TickTick_8.0.60_468.dmg
-  $0 /Applications/TickTick.app /tmp/TickTick.patched.app
+  $0 /Applications/TickTick.app
+  $0 https://example.com/TickTick.dmg
 USAGE
 }
 
@@ -48,12 +48,42 @@ require_tool() {
   fi
 }
 
+is_url() {
+  [[ "$1" == http://* || "$1" == https://* ]]
+}
+
+download_source() {
+  local url="$1"
+  local filename
+  filename="${url%%\?*}"
+  filename="${filename##*/}"
+
+  if [[ -z "$filename" || "$filename" == */ || "$filename" != *.* ]]; then
+    filename="TickTick.download"
+  fi
+
+  mkdir -p "$SCRIPT_DIR/build/downloads"
+  local output="$SCRIPT_DIR/build/downloads/$filename"
+
+  echo "[download] $url" >&2
+  echo "[download] saving to $output" >&2
+  curl --fail --location --show-error --output "$output" "$url"
+  printf '%s\n' "$output"
+}
+
 resolve_source_app() {
   local input="$1"
 
   if [[ "$input" == "-h" || "$input" == "--help" || "$input" == "help" ]]; then
     usage
     exit 0
+  fi
+
+  if is_url "$input"; then
+    local downloaded
+    downloaded="$(download_source "$input")"
+    resolve_source_app "$downloaded"
+    return
   fi
 
   if [[ -d "$input" && "$input" == *.app ]]; then
@@ -70,9 +100,12 @@ resolve_source_app() {
     fi
   fi
 
-  if [[ -f "$input" && "$input" == *.dmg ]]; then
+  if [[ -f "$input" ]]; then
     local plist
-    plist="$(hdiutil attach "$input" -nobrowse -readonly -plist)"
+    plist="$(hdiutil attach "$input" -nobrowse -readonly -plist 2>/dev/null)" || {
+      echo "Could not mount disk image: $input" >&2
+      exit 1
+    }
     MOUNT_POINT="$(printf '%s' "$plist" | plutil -extract system-entities.0.mount-point raw -o - - 2>/dev/null || true)"
     if [[ -z "$MOUNT_POINT" || ! -d "$MOUNT_POINT" ]]; then
       echo "Could not mount DMG: $input" >&2
@@ -99,6 +132,7 @@ require_tool codesign
 require_tool xattr
 require_tool hdiutil
 require_tool plutil
+require_tool curl
 
 if [[ "$SOURCE_INPUT" == "-h" || "$SOURCE_INPUT" == "--help" || "$SOURCE_INPUT" == "help" ]]; then
   usage
