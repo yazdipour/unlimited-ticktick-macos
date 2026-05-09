@@ -1,1 +1,6 @@
+# Compiled dynamic library
+libPatchZero.dylib
+*.plist
+
+# Cloned dependencies / build artifacts
 insert_dylib/
