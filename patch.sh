@@ -12,16 +12,28 @@ die() {
   exit 1
 }
 
+set_entitlement_bool() {
+  local key="$1"
+  local value="$2"
+
+  /usr/libexec/PlistBuddy -c "Set :$key $value" "$ENTITLEMENTS" 2>/dev/null ||
+    /usr/libexec/PlistBuddy -c "Add :$key bool $value" "$ENTITLEMENTS"
+}
+
 echo "==> Preparing App..."
 "$SCRIPT_DIR/prepare.sh" "$@"
 
 if [[ ! -d "$APP" ]]; then
-  die "App directory not found: $APP. Run prepare-app.sh first?"
+  die "App directory not found: $APP. Run prepare.sh first?"
 fi
 
 echo "==> Compiling the Objective-C hook..."
 mkdir -p "$SCRIPT_DIR/build"
-clang -dynamiclib -framework Foundation -o "$SCRIPT_DIR/build/$DYLIB_NAME" "$SCRIPT_DIR/hook.m"
+ARCH_FLAGS=()
+while IFS= read -r arch; do
+  ARCH_FLAGS+=("-arch" "$arch")
+done < <(lipo -archs "$APP_BIN" | tr ' ' '\n')
+clang "${ARCH_FLAGS[@]}" -dynamiclib -framework Foundation -o "$SCRIPT_DIR/build/$DYLIB_NAME" "$SCRIPT_DIR/hook.m"
 
 echo "==> Copying dylib to the App bundle..."
 cp "$SCRIPT_DIR/build/$DYLIB_NAME" "$DYLIB_PATH"
@@ -41,37 +53,30 @@ fi
 
 if ! otool -L "$APP_BIN" | grep -q "$DYLIB_NAME"; then
     echo "==> Injecting dylib into binary..."
-    "$INSERT_DYLIB" --inplace "@executable_path/$DYLIB_NAME" "$APP_BIN"
+    "$INSERT_DYLIB" --inplace --all-yes "@executable_path/$DYLIB_NAME" "$APP_BIN"
 else
     echo "==> Dylib already injected into binary, skipping injection..."
 fi
 install_name_tool -id "@executable_path/$DYLIB_NAME" "$DYLIB_PATH"
 
 ENTITLEMENTS="$SCRIPT_DIR/build/patch-entitlements.plist"
-echo "==> Generating debug entitlements..."
-cat << 'ENT' > "$ENTITLEMENTS"
+echo "==> Generating local debug entitlements..."
+cat > "$ENTITLEMENTS" <<'ENT'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
-  <true/>
-  <key>com.apple.security.cs.allow-jit</key>
-  <true/>
-  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-  <true/>
-  <key>com.apple.security.cs.disable-library-validation</key>
-  <true/>
-  <key>com.apple.security.app-sandbox</key>
-  <false/>
-  <key>com.apple.security.get-task-allow</key>
-  <true/>
-</dict>
+<dict/>
 </plist>
 ENT
+set_entitlement_bool com.apple.security.cs.disable-library-validation true
+set_entitlement_bool com.apple.security.cs.allow-dyld-environment-variables true
+set_entitlement_bool com.apple.security.get-task-allow true
 
 echo "==> Re-signing the App..."
+# Sign the injected dylib first
+codesign --force --sign - --timestamp=none "$DYLIB_PATH"
+
 if [[ -f "$ENTITLEMENTS" ]]; then
   codesign --force --deep --sign - --timestamp=none --entitlements "$ENTITLEMENTS" "$APP"
 else

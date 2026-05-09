@@ -116,10 +116,17 @@ echo "[source] $SOURCE_APP"
 echo "[output] $APP"
 
 echo "[1/4] Creating clean patched copy"
+mkdir -p "$SCRIPT_DIR/build"
 if [[ -e "$APP" ]]; then
   rm -rf "$APP"
 fi
 ditto --noextattr --noacl "$SOURCE_APP" "$APP"
+
+echo "[1.5/4] Extracting original entitlements"
+codesign -d --entitlements :- "$SOURCE_APP" > "$SCRIPT_DIR/build/original-entitlements.plist" 2>/dev/null || true
+if ! grep -q 'dict' "$SCRIPT_DIR/build/original-entitlements.plist" 2>/dev/null; then
+  echo '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict></dict></plist>' > "$SCRIPT_DIR/build/original-entitlements.plist"
+fi
 
 echo "[2/4] Removing Gatekeeper quarantine/provenance metadata"
 xattr -cr "$APP" 2>/dev/null || true
