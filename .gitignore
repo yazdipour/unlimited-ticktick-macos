@@ -4,3 +4,6 @@ libPatchZero.dylib
 
 # Cloned dependencies / build artifacts
 insert_dylib/
+
+.DS_Store
+build/

@@ -2,8 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-APP="${TICKTICK_APP:-$REPO_DIR/TickTick.debug.app}"
+APP="$SCRIPT_DIR/build/TickTick.patched.app"
 APP_BIN="$APP/Contents/MacOS/TickTick"
 DYLIB_NAME="libPatchZero.dylib"
 DYLIB_PATH="$APP/Contents/MacOS/$DYLIB_NAME"

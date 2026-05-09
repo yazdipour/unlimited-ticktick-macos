@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Path to the .app, .dmg, or directory containing TickTick.app to patch.
+# Defaults to /Applications/TickTick.app if not provided.
 DEFAULT_SOURCE="/Applications/TickTick.app"
 SOURCE_INPUT="${1:-$DEFAULT_SOURCE}"
-APP="${2:-$REPO_DIR/TickTick.patched.app}"
+
+# Output path for the prepared app bundle. This will be overwritten if it already exists.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP="$SCRIPT_DIR/build/TickTick.patched.app"
 ENTITLEMENTS="$SCRIPT_DIR/debug-entitlements.plist"
 MOUNT_POINT=""
 SOURCE_APP=""
@@ -22,7 +25,7 @@ SOURCE can be:
 
 Defaults:
   SOURCE     $DEFAULT_SOURCE
-  OUTPUT_APP $REPO_DIR/TickTick.patched.app
+  OUTPUT_APP $SCRIPT_DIR/build/TickTick.patched.app
 
 Examples:
   $0
