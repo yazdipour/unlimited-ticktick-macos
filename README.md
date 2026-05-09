@@ -24,15 +24,8 @@ If you don't have a local macOS development environment set up, or just prefer t
 9. Initially you may get this error or something similar. To pass this issue you need to run this command in terminal: `xattr -cr ~/Applications/TickTick.app` to clear the quarantine attribute from the app bundle. After that, you should be able to launch TickTick without any issues.
 <img src="docs/error.png" alt="Error" width="270" />
 
-## Troubleshooting
-
-### Quarantine or damaged-app warnings
-
-The scripts clear quarantine automatically, but you can repeat it manually:
-
-```bash
-xattr -cr "build/TickTick.patched.app"
-```
+<details>
+<summary>Troubleshooting</summary>
 
 ### `The application "TickTick.patched.app" can't be opened`
 
@@ -77,9 +70,7 @@ The macOS deployment target 'MACOSX_DEPLOYMENT_TARGET' is set to 10.9...
 
 It is not the cause of TickTick launch failures. The helper still builds and is only used to modify the Mach-O load commands.
 
-## Development
-
-To modify the injected behavior, simply edit `hook.m`. It uses standard Objective-C method swizzling.
+</details>
 
 ## Disclaimer
 
