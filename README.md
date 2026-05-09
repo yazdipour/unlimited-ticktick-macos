@@ -1,8 +1,13 @@
 # Unlimited TickTick - macOS
 
+> [!TIP]
+> You can also find a Windows version of this patch in the [Unlimited TickTick - Windows](https://github.com/yazdipour/unlimited-ticktick-windows) repository.
+
 A standalone set of tools to statically patch the official TickTick macOS application. It injects a custom Objective-C dynamic library to modify runtime behavior without needing an external debugger or runtime injection tool like Frida.
 
 This creates a fully re-signed `.app` bundle that you can launch natively on macOS by simply double-clicking it.
+
+![premium enabled](docs/screenshot.png)
 
 ## Build via GitHub Actions
 
@@ -12,9 +17,12 @@ If you don't have a local macOS development environment set up, or just prefer t
 2. Go to the **Actions** tab on your newly forked repository. If prompted, click the button to enable workflows.
 3. On the left sidebar under "All workflows", click on **Build Patched TickTick**.
 4. Click the **Run workflow** button on the right side.
-5. You can optionally provide a direct URL to a specific official TickTick DMG, or leave the default URL to fetch the latest version.
+5. You can optionally provide a direct URL to a specific official TickTick DMG. Either provide a URL to your app or dmg, or you can find the latest version at the official TickTick website and copy the download link to the DMG file.
 6. Click **Run workflow** and wait for the build to finish.
 7. Go to the **Releases** section on the right side of your repository's main page. You will find a new **Draft** release containing your patched `TickTick.patched.dmg` file ready to download.
+8. Download the DMG, open it, and drag the patched app to your Applications folder.
+9. Initially you may get this error or something similar. To pass this issue you need to run this command in terminal: `xattr -cr ~/Applications/TickTick.app` to clear the quarantine attribute from the app bundle. After that, you should be able to launch TickTick without any issues.
+<img src="docs/error.png" alt="Error" width="270" />
 
 ## Troubleshooting
 
