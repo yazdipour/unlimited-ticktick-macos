@@ -4,42 +4,17 @@ A standalone set of tools to statically patch the official TickTick macOS applic
 
 This creates a fully re-signed `.app` bundle that you can launch natively on macOS by simply double-clicking it.
 
-## Features
+## Build via GitHub Actions
 
-- **Static Injection**: Compiles and injects an Objective-C hook (`hook.m`) directly into the app's Mach-O binary.
-- **Universal Dylib Build**: Builds `libPatchZero.dylib` for the same architectures as TickTick's main executable, for example `x86_64 arm64`.
-- **Local Re-Signing**: Re-signs the injected dylib and app bundle ad-hoc with minimal local debug entitlements.
-- **Quarantine Cleanup**: Drops Gatekeeper quarantine/provenance attributes from the generated bundle.
-- **No External Daemons**: Unlike Frida, you do not need to keep a terminal open to attach to the process. 
-- **Auto-dependency Resolution**: Automatically clones and builds `Tyilo/insert_dylib` locally for Mach-O modification.
+If you don't have a local macOS development environment set up, or just prefer to build the patched app in the cloud, you can use GitHub Actions to generate your own patched DMG.
 
-## Prerequisites
-
-You only need standard macOS developer tools:
-- Xcode Command Line Tools (`xcode-select --install`)
-- Common Unix tools already included with macOS: `bash`, `codesign`, `curl`, `ditto`, `hdiutil`, `lipo`, `otool`, `plutil`, `xattr`
-- `git`, used only if `insert_dylib` needs to be cloned automatically
-
-## Usage
-
-Run `patch.sh` with an optional source argument:
-
-```bash
-# By default, it patches ~/Applications/TickTick.app
-./patch.sh
-
-# Or you can target a specific local disk image
-./patch.sh ~/Downloads/TickTick_8.0.60_468.dmg
-
-# Or target a specific App bundle
-./patch.sh /Applications/TickTick.app
-
-# Or download and patch a disk image directly
-./patch.sh "https://example.com/TickTick.dmg"
-```
-
-Once the script completes successfully, it produces `build/TickTick.patched.app`.
-
+1. **Fork** this repository using the fork button on the top right.
+2. Go to the **Actions** tab on your newly forked repository. If prompted, click the button to enable workflows.
+3. On the left sidebar under "All workflows", click on **Build Patched TickTick**.
+4. Click the **Run workflow** button on the right side.
+5. You can optionally provide a direct URL to a specific official TickTick DMG, or leave the default URL to fetch the latest version.
+6. Click **Run workflow** and wait for the build to finish.
+7. Go to the **Releases** section on the right side of your repository's main page. You will find a new **Draft** release containing your patched `TickTick.patched.dmg` file ready to download.
 
 ## Troubleshooting
 
