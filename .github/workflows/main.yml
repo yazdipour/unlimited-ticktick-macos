@@ -27,7 +27,12 @@ jobs:
       - name: Run Patch Script
         run: |
           chmod +x patch.sh prepare.sh
-          ./patch.sh "${{ inputs.app_url }}"
+          APP_URL="${{ inputs.app_url }}"
+          if [[ "$APP_URL" =~ ^(https?://[^[:space:]]*\.dmg)(https?://[^[:space:]]+)$ ]]; then
+            echo "::warning::Detected concatenated app_url input. Using the first URL segment: ${BASH_REMATCH[1]}"
+            APP_URL="${BASH_REMATCH[1]}"
+          fi
+          ./patch.sh "$APP_URL"
 
       - name: Package to DMG
         run: |
