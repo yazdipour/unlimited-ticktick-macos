@@ -5,6 +5,16 @@
 
 A standalone set of tools to statically patch the official TickTick macOS application. It injects a custom Objective-C dynamic library to modify runtime behavior without needing an external debugger or runtime injection tool like Frida.
 
+The build also neutralizes the app's built-in piracy-alert handler directly in
+the Mach-O binary (`disable_piracy_alert.py`). That handler shows an
+"Application Not Licensed" dialog and then hides the app windows after the
+dialog is dismissed, which is what caused the brief window flash on launch.
+Patching its entry point to `ret` stops it before any UI runs; the dylib's
+alert suppression remains as a fallback if the pattern is not found.
+
+See [docs/INTERNALS.md](docs/INTERNALS.md) for how the patch works and how to
+maintain it when a new TickTick version ships.
+
 This creates a fully re-signed `.app` bundle that you can launch natively on macOS by simply double-clicking it.
 
 ![premium enabled](docs/screenshot.png)

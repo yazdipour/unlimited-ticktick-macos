@@ -59,6 +59,17 @@ else
 fi
 install_name_tool -id "@executable_path/$DYLIB_NAME" "$DYLIB_PATH"
 
+echo "==> Neutralizing the piracy alert handler in the binary..."
+# The app's notification handler shows "Application Not Licensed" and then
+# hides the windows after runModal, which is what causes the launch flash.
+# Patching its entry to `ret` stops it before any UI runs; the dylib alert
+# suppression stays as a fallback if the pattern is not found.
+if python3 "$SCRIPT_DIR/disable_piracy_alert.py" "$APP_BIN"; then
+  echo "    Piracy handler patched (binary level)."
+else
+  echo "    WARNING: piracy handler pattern not found; relying on dylib suppression."
+fi
+
 ENTITLEMENTS="$SCRIPT_DIR/build/patch-entitlements.plist"
 ORIGINAL_ENTITLEMENTS="$SCRIPT_DIR/build/original-entitlements.plist"
 
